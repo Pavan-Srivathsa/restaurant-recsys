@@ -1,0 +1,57 @@
+# Pre-registered experiment configuration.
+# Do not change primary metric or assignment after looking at results.
+
+experiment_name: personalized_ranker_v1
+model_version: ranker_v1
+
+assignment:
+  unit: user_id
+  method: hashed_bucket
+  control_buckets: [0, 49]   # inclusive
+  treatment_buckets: [50, 99]
+  control: contextual_popularity
+  treatment: personalized_ranker
+
+primary_metric:
+  name: completed_reservations_per_exposed_user
+  definition: >
+    Mean number of completed_reservation events per user who received at
+    least one recommendation impression during the experiment window.
+  chosen_before_results: true
+
+secondary_metrics:
+  - recommendation_ctr
+  - booking_initiation_rate
+  - reservation_completion_rate
+  - bookings_per_user
+  - average_booking_value
+
+guardrail_metrics:
+  - p95_recommendation_latency_ms
+  - cancellation_rate
+  - restaurant_coverage
+  - recommendation_diversity
+  - no_result_rate
+
+power:
+  alpha: 0.05
+  power: 0.80
+  baseline_conversion_rate: 0.08
+  minimum_detectable_effect_relative: 0.06
+
+cuped:
+  covariate: pre_experiment_completed_reservations
+  window_days: 28
+
+heterogeneous_effects:
+  primary_segment: returning_user
+  pre_registered_segments:
+    - new_users
+    - returning_users
+    - high_frequency_users
+    - low_frequency_users
+  model: reservation ~ treatment + returning_user + treatment * returning_user
+
+counterfactual:
+  max_ips_weight: 100.0
+  propensity_clip_min: 0.001

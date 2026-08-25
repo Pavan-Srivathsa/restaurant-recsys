@@ -1,0 +1,43 @@
+candidate_limit: 300
+geo_radius_km: 15.0
+top_k: 10
+
+# Availability is simulated when real inventory is unavailable.
+availability:
+  simulated: true
+  capacity_default: 40
+  min_probability_to_recommend: 0.05
+
+event_weights:
+  impression: 0
+  click: 1
+  booking: 3
+  completed_reservation: 5
+  cancelled_reservation: 0
+
+time_decay:
+  lambda: 0.03  # daily exponential decay
+
+relevance_labels:
+  impression: 0
+  click: 1
+  booking: 2
+  completed_reservation: 3
+
+baseline:
+  w_popularity: 0.35
+  w_rating: 0.25
+  w_distance: 0.20
+  w_availability: 0.10
+  w_local_booking_rate: 0.10
+
+temporal_split:
+  train: 0.70
+  validation: 0.15
+  test: 0.15
+
+cohorts:
+  new_user_max_interactions: 0
+  light_user_max_interactions: 5
+  returning_user_min_interactions: 6
+  heavy_user_min_interactions: 20
