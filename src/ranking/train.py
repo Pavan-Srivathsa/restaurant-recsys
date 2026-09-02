@@ -47,14 +47,14 @@ def group_sizes(request_ids: Sequence[str]) -> list:
     return sizes
 
 
-def lgbm_ranker_params(seed: int = 7) -> dict:
+def lgbm_ranker_params(seed: int = 7, min_data_in_leaf: int = 20) -> dict:
     return {
         "objective": "lambdarank",
         "metric": "ndcg",
         "ndcg_eval_at": [10],
         "learning_rate": 0.05,
         "num_leaves": 31,
-        "min_data_in_leaf": 20,
+        "min_data_in_leaf": min_data_in_leaf,
         "feature_fraction": 0.9,
         "deterministic": True,
         "force_row_wise": True,
@@ -63,7 +63,13 @@ def lgbm_ranker_params(seed: int = 7) -> dict:
     }
 
 
-def train_lambdamart(frame: Any, seed: int = 7) -> Any:
+def train_lambdamart(
+    frame: Any,
+    valid_frame: Any = None,
+    seed: int = 7,
+    num_boost_round: int = 200,
+    min_data_in_leaf: int = 20,
+) -> Any:
     """Train a LightGBM LambdaMART model.
 
     `frame` must provide columns in FEATURE_COLUMNS, plus `label` and `request_id`,
@@ -77,8 +83,41 @@ def train_lambdamart(frame: Any, seed: int = 7) -> Any:
     missing = [c for c in FEATURE_COLUMNS if c not in frame.columns]
     if missing:
         raise ValueError(f"missing feature columns: {missing}")
+    params = lgbm_ranker_params(seed=seed, min_data_in_leaf=min_data_in_leaf)
     x = frame[list(FEATURE_COLUMNS)]
     y = frame["label"]
     groups = group_sizes(list(frame["request_id"]))
-    dataset = lgb.Dataset(x, label=y, group=groups, feature_name=list(FEATURE_COLUMNS))
-    return lgb.train(lgbm_ranker_params(seed=seed), dataset, num_boost_round=100)
+    dataset = lgb.Dataset(x, label=y, group=groups, feature_name=list(FEATURE_COLUMNS), params=params)
+    valid_sets = [dataset]
+    valid_names = ["train"]
+    callbacks = [lgb.log_evaluation(period=0)]
+    if valid_frame is not None and len(valid_frame) > 0:
+        vx = valid_frame[list(FEATURE_COLUMNS)]
+        vy = valid_frame["label"]
+        vg = group_sizes(list(valid_frame["request_id"]))
+        valid = lgb.Dataset(vx, label=vy, group=vg, feature_name=list(FEATURE_COLUMNS), params=params)
+        valid_sets.append(valid)
+        valid_names.append("valid")
+        callbacks.append(lgb.early_stopping(stopping_rounds=30, verbose=False))
+    return lgb.train(
+        params,
+        dataset,
+        num_boost_round=num_boost_round,
+        valid_sets=valid_sets,
+        valid_names=valid_names,
+        callbacks=callbacks,
+    )
+
+
+def save_model(model: Any, path) -> None:
+    from pathlib import Path
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    model.save_model(str(path))
+
+
+def load_model(path) -> Any:
+    import lightgbm as lgb
+
+    return lgb.Booster(model_file=str(path))

@@ -165,7 +165,13 @@ Covariate: pre-experiment completed reservations.
 Y_cuped = Y − θ(X − mean(X))
 ```
 
-Report variance reduction and confirm the ATE is not materially changed.
+Report variance reduction and confirm the ATE is not materially changed. CUPED is a mean-preserving transformation of the pooled sample; arm means may shift.
+
+### Simulated experiment protocol
+
+After training on the logging period, a later window samples the same users. Control ranks eligible restaurants by contextual popularity (deterministic top 10). Treatment ranks the **same eligible set** with LambdaMART using as-of features (logging events plus earlier experiment events only). The click → book → complete/cancel funnel is shared with the logging generator. Analysis is user-level among exposed users. Returning vs new is defined from **pre-experiment** engagement, before looking at Y.
+
+This is not a live production A/B test.
 
 ### Heterogeneous effects
 
@@ -179,21 +185,56 @@ rather than a pile of independent significance tests.
 
 ## Counterfactual evaluation
 
-Historical clicks and bookings are exposure-biased (policy and position). Impressions store a propensity.
+The logging policy is contextual popularity: always show the top 8, then sample the remaining display slots uniformly. That defines an exact display propensity
 
-- IPS: `weight = min(1 / propensity, max_weight)`.
-- Report unweighted, IPS, clipped IPS, and effective sample size.
-- Doubly robust: outcome model `m(x, action)` plus propensity-weighted residual. Compare naive, IPS, and DR.
+```text
+P(shown | x, restaurant)
+```
+
+Position examination is `1 / rank` normalized over the 10 slots. IPS uses the product
+
+```text
+P(exposure) = P(shown | logging policy) × P(examine | position)
+```
+
+For the candidate policy π (personalized top-10):
+
+```text
+w = I[restaurant in π top-10] / P_log(shown)
+w_clipped = min(w, max_weight)
+```
+
+Estimators, all as expected booking rate of the target slate:
+
+- naive overlap: unweighted mean outcome on items both policies showed
+- IPS / clipped IPS
+- SNIPS
+- direct method: mean `m(x, a)` on π's top-10
+- doubly robust: DM + propensity-weighted residual on logged items
+
+`m(x, a)` is a LightGBM binary classifier on as-of features, trained on train-split logged rows only.
+
+On synthetic data, an oracle booking rate (share of π's top-10 with latent relevance ≥ booking) is reported so bias can be compared. Do not treat that oracle as available in production.
+
+## Offline evaluation protocol (Phase 2)
+
+Training uses **logged observed labels** on restaurants the popularity policy actually showed (impression=0, click=1, booking=2, completed=3), grouped by `request_id`.
+
+Test ranking scores **all geographically eligible, currently available candidates**. Graded relevance for NDCG/Recall is a position-free oracle from the simulator’s latent cuisine/price/distance utility. That is the product question — which bookable restaurants should we have shown — not a re-ranking of only the logged top 10.
+
+Cohorts are defined from as-of **clicks and bookings**, not impressions:
+
+```text
+new: 0     light: 1–5     returning: 6–19     heavy: 20+
+```
 
 ## Serving
 
-FastAPI ranks for a request `{user_id, latitude, longitude, timestamp}`, assigns the experiment variant, returns top 10, and logs impressions asynchronously. Postgres stores events; Redis may cache restaurant metadata and recent features.
+FastAPI ranks for a request `{user_id, latitude, longitude, timestamp}`, assigns the experiment variant, returns top 10, and logs impressions asynchronously. Treatment loads `models/ranker_v1.txt` when present. Postgres stores events; Redis may cache restaurant metadata and recent features.
 
-## What this scaffold does not yet do
+## What is not done yet
 
-- Ingest the Yelp Open Dataset (or another public dump).
-- Train and persist a LambdaMART model on real interactions.
-- Run a live A/B test with production traffic.
-- Connect to a real reservation inventory system.
+- Ingest the Yelp Open Dataset (or another public dump). Current numbers are from the preference-aware synthetic generator.
+- Run a live A/B test with production traffic. Phase 4 is a **simulated** experiment on the same synthetic world.
+- Connect to a real reservation inventory system. Availability remains simulated.
 
-Those are later phases. The contracts above are stable so those phases can plug in without rewriting evaluation or assignment.

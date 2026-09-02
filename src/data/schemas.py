@@ -85,3 +85,22 @@ class RecommendationRequest:
     longitude: float
     timestamp: datetime
     request_id: str
+
+
+@dataclass(frozen=True)
+class UserPref:
+    """Latent preferences used only by the simulator / eval oracle, never as model features."""
+
+    user_id: str
+    cuisines: tuple
+    price: int
+
+
+@dataclass(frozen=True)
+class RequestLog:
+    request_id: str
+    user_id: str
+    timestamp: datetime
+    latitude: float
+    longitude: float
+    shown_ids: tuple

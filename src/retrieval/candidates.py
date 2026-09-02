@@ -8,6 +8,7 @@ from typing import Dict, List
 
 from data.availability import availability_probability, is_available, is_open
 from data.geo import haversine_km
+from data.index import InteractionIndex
 from data.schemas import Interaction, Restaurant
 from data.splits import filter_as_of
 
@@ -17,8 +18,11 @@ def existing_bookings_as_of(
     restaurant_id: str,
     as_of: datetime,
     window_hours: int = 4,
+    index: InteractionIndex | None = None,
 ) -> int:
     """Count simulated bookings near the request time (not future)."""
+    if index is not None:
+        return index.bookings_in_window(restaurant_id, as_of, window_hours=window_hours)
     from datetime import timedelta
 
     start = as_of - timedelta(hours=window_hours)
@@ -41,6 +45,7 @@ def generate_candidates(
     radius_km: float = 15.0,
     limit: int = 300,
     min_availability: float = 0.05,
+    index: InteractionIndex | None = None,
 ) -> List[Restaurant]:
     """Return eligible restaurants, capped at `limit`.
 
@@ -53,7 +58,9 @@ def generate_candidates(
             continue
         if not is_open(restaurant.opening_hours, timestamp):
             continue
-        bookings = existing_bookings_as_of(interactions, restaurant.restaurant_id, timestamp)
+        bookings = existing_bookings_as_of(
+            interactions, restaurant.restaurant_id, timestamp, index=index
+        )
         if not is_available(
             restaurant.capacity,
             timestamp.hour,
@@ -78,10 +85,13 @@ def candidate_availability_map(
     candidates: Sequence[Restaurant],
     interactions: Sequence[Interaction],
     timestamp: datetime,
+    index: InteractionIndex | None = None,
 ) -> Dict[str, float]:
     out: Dict[str, float] = {}
     for restaurant in candidates:
-        bookings = existing_bookings_as_of(interactions, restaurant.restaurant_id, timestamp)
+        bookings = existing_bookings_as_of(
+            interactions, restaurant.restaurant_id, timestamp, index=index
+        )
         out[restaurant.restaurant_id] = availability_probability(
             restaurant.capacity,
             timestamp.hour,

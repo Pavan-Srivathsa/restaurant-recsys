@@ -1,3 +1,5 @@
+import numpy as np
+
 from experiments.power import two_proportion_sample_size
 from experiments.treatment_effects import ate, interaction_ols
 
@@ -31,3 +33,15 @@ def test_power_analysis_returns_positive_n():
     out = two_proportion_sample_size(0.08, 0.06, alpha=0.05, power=0.80)
     assert out["n_per_arm"] > 100
     assert out["n_total"] == 2 * out["n_per_arm"]
+
+
+def test_interaction_ols_near_collinear_is_finite():
+    rng = np.random.default_rng(0)
+    n = 200
+    t = rng.integers(0, 2, size=n)
+    r = np.ones(n, dtype=int)
+    r[:20] = 0
+    y = 0.1 * t + 0.2 * r + rng.normal(0, 1, size=n)
+    fit = interaction_ols(y, t, r)
+    assert np.isfinite(fit["treatment_x_returning"])
+    assert np.isfinite(fit["treatment_x_returning_p"])

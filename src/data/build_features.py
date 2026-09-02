@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict
 
 from data.geo import distance_features, haversine_km
+from data.index import InteractionIndex
 from data.schemas import EVENT_WEIGHTS, Interaction, Restaurant, User
 from data.splits import filter_as_of
 
@@ -63,7 +64,9 @@ def price_preference(
     return {"user_mean_price": mean, "user_price_std": math.sqrt(var)}
 
 
-def price_match_score(user_mean_price: float, restaurant_price: float) -> float:
+def price_match_score(user_mean_price: float, restaurant_price: float, has_history: bool = True) -> float:
+    if not has_history:
+        return 0.5
     return math.exp(-abs(user_mean_price - restaurant_price))
 
 
@@ -153,7 +156,9 @@ def build_pair_features(
     feats.update(price_pref)
     feats["restaurant_price"] = float(restaurant.price_level)
     feats["absolute_price_difference"] = abs(feats["user_mean_price"] - restaurant.price_level)
-    feats["price_match"] = price_match_score(feats["user_mean_price"], float(restaurant.price_level))
+    feats["price_match"] = price_match_score(
+        feats["user_mean_price"], float(restaurant.price_level), has_history=feats["user_mean_price"] > 0
+    )
     feats["cuisine_affinity"] = cuisine_affinity(
         [e for e in interactions if e.user_id == user.user_id],
         restaurant_cuisine,
@@ -182,6 +187,7 @@ def price_map(restaurants: Iterable[Restaurant]) -> Dict[str, float]:
 
 
 def user_cohort(historical_interaction_count: int) -> str:
+    """Cohort from as-of clicks/bookings, not impressions."""
     if historical_interaction_count <= 0:
         return "new"
     if historical_interaction_count <= 5:
@@ -189,3 +195,120 @@ def user_cohort(historical_interaction_count: int) -> str:
     if historical_interaction_count >= 20:
         return "heavy"
     return "returning"
+
+
+def user_snapshot(
+    index: InteractionIndex,
+    user_id: str,
+    as_of: datetime,
+    restaurant_cuisine: Mapping[str, str],
+    restaurant_price: Mapping[str, float],
+    decay_lambda: float = DEFAULT_LAMBDA,
+) -> dict:
+    """Precompute per-user as-of features once per request."""
+    past = index.user_as_of(user_id, as_of)
+    weighted_total = 0.0
+    cuisine_weighted: Dict[str, float] = {}
+    prices = []
+    pair_counts: Dict[str, Dict[str, float]] = {}
+    booking_count = 0
+    engagement_count = 0
+    for event in past:
+        counts = pair_counts.setdefault(
+            event.restaurant_id,
+            {"previous_visits": 0.0, "previous_clicks": 0.0, "previous_bookings": 0.0},
+        )
+        counts["previous_visits"] += 1.0
+        if event.event_type == "click":
+            counts["previous_clicks"] += 1.0
+        if event.event_type in {"booking", "completed_reservation"}:
+            counts["previous_bookings"] += 1.0
+            booking_count += 1
+        w = EVENT_WEIGHTS.get(event.event_type, 0.0)
+        if w <= 0:
+            continue
+        engagement_count += 1
+        value = w * math.exp(-decay_lambda * _days_since(event.timestamp, as_of))
+        weighted_total += value
+        cuisine = restaurant_cuisine.get(event.restaurant_id)
+        if cuisine:
+            cuisine_weighted[cuisine] = cuisine_weighted.get(cuisine, 0.0) + value
+        if event.restaurant_id in restaurant_price:
+            prices.append(float(restaurant_price[event.restaurant_id]))
+    affinities = {c: (w / weighted_total if weighted_total else 0.0) for c, w in cuisine_weighted.items()}
+    if prices:
+        mean = sum(prices) / len(prices)
+        var = sum((p - mean) ** 2 for p in prices) / max(len(prices) - 1, 1)
+        std = math.sqrt(var)
+    else:
+        mean, std = 0.0, 0.0
+    return {
+        "user_activity_count": float(len(past)),
+        "user_engagement_count": float(engagement_count),
+        "user_booking_count": float(booking_count),
+        "user_mean_price": mean,
+        "user_price_std": std,
+        "has_price_history": bool(prices),
+        "cuisine_affinity": affinities,
+        "pair_counts": pair_counts,
+        "context": context_features(as_of),
+    }
+
+
+def restaurant_snapshot_from_events(past: Sequence[Interaction], as_of: datetime) -> dict:
+    return _window_stats(past, as_of)
+
+
+def _window_stats(past: Sequence[Interaction], as_of: datetime) -> dict:
+    d7 = as_of - timedelta(days=7)
+    d30 = as_of - timedelta(days=30)
+    bookings_7 = sum(1 for e in past if e.event_type == "booking" and e.timestamp >= d7)
+    bookings_30 = sum(1 for e in past if e.event_type == "booking" and e.timestamp >= d30)
+    completed_30 = sum(1 for e in past if e.event_type == "completed_reservation" and e.timestamp >= d30)
+    cancelled_30 = sum(1 for e in past if e.event_type == "cancelled_reservation" and e.timestamp >= d30)
+    completion_den = completed_30 + cancelled_30
+    return {
+        "bookings_last_7_days": float(bookings_7),
+        "bookings_last_30_days": float(bookings_30),
+        "completion_rate_last_30_days": (completed_30 / completion_den) if completion_den else 0.0,
+        "historical_booking_rate": float(
+            sum(1 for e in past if e.event_type == "booking") / max(len(past), 1)
+        ),
+    }
+
+
+def pair_features_from_snapshot(
+    user: User,
+    restaurant: Restaurant,
+    snapshot: dict,
+    rest_stats: dict,
+    availability: float,
+) -> dict:
+    dist = haversine_km(user.latitude, user.longitude, restaurant.latitude, restaurant.longitude)
+    feats: Dict[str, float] = {}
+    feats.update(distance_features(dist))
+    feats.update(snapshot["context"])
+    counts = snapshot["pair_counts"].get(
+        restaurant.restaurant_id,
+        {"previous_visits": 0.0, "previous_clicks": 0.0, "previous_bookings": 0.0},
+    )
+    feats.update(counts)
+    feats.update(rest_stats)
+    feats["user_mean_price"] = snapshot["user_mean_price"]
+    feats["user_price_std"] = snapshot["user_price_std"]
+    feats["restaurant_price"] = float(restaurant.price_level)
+    feats["absolute_price_difference"] = abs(feats["user_mean_price"] - restaurant.price_level)
+    feats["price_match"] = price_match_score(
+        feats["user_mean_price"],
+        float(restaurant.price_level),
+        has_history=snapshot["has_price_history"],
+    )
+    feats["cuisine_affinity"] = float(snapshot["cuisine_affinity"].get(restaurant.cuisine, 0.0))
+    feats["user_activity_count"] = snapshot["user_activity_count"]
+    feats["user_booking_count"] = snapshot["user_booking_count"]
+    feats["user_average_price"] = feats["user_mean_price"]
+    feats["restaurant_rating"] = float(restaurant.rating)
+    feats["restaurant_popularity"] = float(restaurant.popularity_score)
+    feats["reservation_availability"] = float(availability)
+    feats["review_count"] = float(restaurant.review_count)
+    return feats

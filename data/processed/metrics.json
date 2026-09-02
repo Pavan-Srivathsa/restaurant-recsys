@@ -1,0 +1,283 @@
+{
+  "availability_simulated": true,
+  "baseline": {
+    "coverage": 0.5666666666666667,
+    "diversity": 0.5956937799043056,
+    "hit_rate@10": 0.7990430622009569,
+    "mrr": 0.37387739713545115,
+    "n_requests": 209.0,
+    "ndcg@10": 0.22812582468369758,
+    "recall@10": 0.15540935214083423
+  },
+  "cohorts": {
+    "heavy": {
+      "baseline_ndcg@10": 0.2618732563366063,
+      "baseline_recall@10": 0.17269324246490564,
+      "n_requests": 118.0,
+      "ndcg_lift": 0.7712863155407254,
+      "personalized_ndcg@10": 0.4638525153551193,
+      "personalized_recall@10": 0.35328793471376596,
+      "recall_lift": 1.0457542499704955
+    },
+    "light": {
+      "baseline_ndcg@10": 0.1321483820408092,
+      "baseline_recall@10": 0.10046812664459723,
+      "n_requests": 10.0,
+      "ndcg_lift": 0.3814700645219612,
+      "personalized_ndcg@10": 0.18255903386438946,
+      "personalized_recall@10": 0.12456476530005942,
+      "recall_lift": 0.23984361468889803
+    },
+    "new": {
+      "baseline_ndcg@10": 0.22427172941318116,
+      "baseline_recall@10": 0.16713425463425463,
+      "n_requests": 10.0,
+      "ndcg_lift": 0.06303494077711638,
+      "personalized_ndcg@10": 0.2384086845947225,
+      "personalized_recall@10": 0.16083083583083585,
+      "recall_lift": -0.037714703172086174
+    },
+    "returning": {
+      "baseline_ndcg@10": 0.18609932389624448,
+      "baseline_recall@10": 0.13277081934911258,
+      "n_requests": 71.0,
+      "ndcg_lift": 0.5837464413722848,
+      "personalized_ndcg@10": 0.2947341419624654,
+      "personalized_recall@10": 0.24037635934901883,
+      "recall_lift": 0.8104607663598444
+    }
+  },
+  "counterfactual": {
+    "abs_error_clipped_ips": 0.059761904761904766,
+    "abs_error_dm": 0.0478584257623266,
+    "abs_error_dr": 0.06827115410979498,
+    "abs_error_exposure_snips": 0.07535135522750405,
+    "abs_error_ips": 0.059761904761904766,
+    "abs_error_naive": 0.0052625635234330725,
+    "abs_error_snips": 0.07380387896603507,
+    "clipped_ips": 0.23166666666666666,
+    "direct_method": 0.24357014566624482,
+    "doubly_robust": 0.22315741731877645,
+    "effective_sample_size": 166.7195519637034,
+    "exposure_ess": 530.5089829605645,
+    "exposure_snips": 0.21607721620106737,
+    "ips": 0.23166666666666666,
+    "logging_on_policy": 0.21523809523809523,
+    "max_exposure_weight": 100.0,
+    "max_raw_weight": 40.0,
+    "max_weight": 100.0,
+    "mean_clipped_weight": 1.0645238095238094,
+    "mean_raw_weight": 1.0645238095238094,
+    "n_logged_weights": 2100.0,
+    "n_requests": 210.0,
+    "naive_overlap": 0.28616600790513835,
+    "oracle": 0.2914285714285714,
+    "snips": 0.21762469246253635
+  },
+  "experiment": {
+    "availability_simulated": true,
+    "cuped": {
+      "absolute_lift": 9.665256388517875,
+      "ci_high": 12.956324855878625,
+      "ci_low": 6.374187921157125,
+      "control_mean": 9.334061562604123,
+      "mean_y": 14.324937027707808,
+      "mean_y_cuped": 14.324937027707811,
+      "n_control": 192.0,
+      "n_treatment": 205.0,
+      "p_value": 1.5708685596335693e-08,
+      "relative_lift": 1.0354823914211844,
+      "std_error": 1.6740024311259991,
+      "theta": 3.266053166462192,
+      "treatment_mean": 18.999317951122,
+      "variance_reduction": 0.6063876566120019,
+      "variance_y": 783.2704119278427,
+      "variance_y_cuped": 308.30490234540076
+    },
+    "experiment_name": "personalized_ranker_v1",
+    "guardrails": {
+      "cancellation_rate": {
+        "control": 0.3473724884080371,
+        "treatment": 0.2455180222683525
+      },
+      "no_result_rate": 0.0,
+      "p95_latency_ms_control": 0.12455470000531928,
+      "p95_latency_ms_treatment": 17.384424599998727,
+      "p95_recommendation_latency_ms": 15.291451799994956,
+      "recommendation_diversity": 0.4321071428571428,
+      "restaurant_coverage": 1.0,
+      "restaurant_coverage_control": 0.5666666666666667,
+      "restaurant_coverage_treatment": 1.0
+    },
+    "hte": {
+      "intercept": 4.11764705946598,
+      "intercept_p": 0.5364605620055233,
+      "intercept_se": 6.65512674920975,
+      "returning_user": 5.133781511996261,
+      "returning_user_p": 0.46188986890657757,
+      "returning_user_se": 6.970885048599948,
+      "treatment": 5.799019607169043,
+      "treatment_p": 0.5053731297256647,
+      "treatment_se": 8.698465365948387,
+      "treatment_x_returning": 5.723032484035912,
+      "treatment_x_returning_p": 0.533011102719621,
+      "treatment_x_returning_se": 9.17200780440532
+    },
+    "n_attempted": 2800,
+    "n_control": 192,
+    "n_exposed": 397,
+    "n_new": 41,
+    "n_requests": 2800,
+    "n_returning": 356,
+    "n_treatment": 205,
+    "power": {
+      "alpha": 0.05,
+      "baseline_rate": 0.08,
+      "mde_relative": 0.06,
+      "n_exposed": 397.0,
+      "n_per_arm": 51515.0,
+      "n_total": 103030.0,
+      "power": 0.8,
+      "treatment_rate": 0.0848,
+      "underpowered": true
+    },
+    "primary": {
+      "absolute_lift": 10.705564024390245,
+      "ci_high": 15.987195032647772,
+      "ci_low": 5.423933016132717,
+      "control_mean": 8.796875,
+      "n_control": 192.0,
+      "n_treatment": 205.0,
+      "p_value": 8.038302927493525e-05,
+      "relative_lift": 1.2169735303036868,
+      "std_error": 2.6865023428770884,
+      "treatment_mean": 19.502439024390245
+    },
+    "primary_metric": "completed_reservations_per_exposed_user",
+    "secondary": {
+      "average_booking_value": {
+        "control": 2.5562085988075505,
+        "note": "mean restaurant price_level among users with a completed reservation",
+        "treatment": 2.511717403848223
+      },
+      "booking_initiation_rate": {
+        "control": 0.2116107931316435,
+        "treatment": 0.3360177552314521
+      },
+      "bookings_per_user": {
+        "absolute_lift": 12.369613821138211,
+        "ci_high": 18.943366581440532,
+        "ci_low": 5.79586106083589,
+        "control_mean": 13.479166666666666,
+        "n_control": 192.0,
+        "n_treatment": 205.0,
+        "p_value": 0.0002467916663677588,
+        "relative_lift": 0.9176838692652769,
+        "std_error": 3.343740250774029,
+        "treatment_mean": 25.848780487804877
+      },
+      "clicks_per_user": {
+        "absolute_lift": 12.98407012195122,
+        "ci_high": 20.97551755917721,
+        "ci_low": 4.992622684725231,
+        "control_mean": 20.328125,
+        "n_control": 192.0,
+        "n_treatment": 205.0,
+        "p_value": 0.001514540438144023,
+        "relative_lift": 0.6387244333627041,
+        "std_error": 4.064850844279182,
+        "treatment_mean": 33.31219512195122
+      },
+      "conversion_any_completion": {
+        "absolute_lift": 0.016615853658536572,
+        "ci_high": 0.046378721115682,
+        "ci_low": -0.013147013798608859,
+        "control_mean": 0.96875,
+        "n_control": 192.0,
+        "n_treatment": 205.0,
+        "p_value": 0.27306478407074525,
+        "relative_lift": 0.017151848937844202,
+        "std_error": 0.015138886648717351,
+        "treatment_mean": 0.9853658536585366
+      },
+      "recommendation_ctr": {
+        "control": 0.3191332788225675,
+        "treatment": 0.4330374128091313
+      },
+      "reservation_completion_rate": {
+        "control": 0.6526275115919629,
+        "treatment": 0.7544819777316475
+      }
+    },
+    "segments": {
+      "high_frequency": {
+        "absolute_lift": 11.938835094981151,
+        "ci_high": 18.346654397436552,
+        "ci_low": 5.531015792525752,
+        "control_mean": 9.717791411042946,
+        "n_control": 163.0,
+        "n_treatment": 166.0,
+        "p_value": 0.0002881678179313698,
+        "relative_lift": 1.2285543689911158,
+        "std_error": 3.257255175453793,
+        "treatment_mean": 21.656626506024097
+      },
+      "low_frequency": {
+        "absolute_lift": 6.71264367816092,
+        "ci_high": 10.072804355115085,
+        "ci_low": 3.352483001206755,
+        "control_mean": 3.6206896551724137,
+        "n_control": 29.0,
+        "n_treatment": 39.0,
+        "p_value": 0.000169059105021798,
+        "relative_lift": 1.8539682539682543,
+        "std_error": 1.6829713306808276,
+        "treatment_mean": 10.333333333333334
+      },
+      "new": {
+        "absolute_lift": 5.799019607843137,
+        "ci_high": 9.440036237259921,
+        "ci_low": 2.1580029784263526,
+        "control_mean": 4.117647058823529,
+        "n_control": 17.0,
+        "n_treatment": 24.0,
+        "p_value": 0.0025742254690076984,
+        "relative_lift": 1.4083333333333334,
+        "std_error": 1.8000855164518228,
+        "treatment_mean": 9.916666666666666
+      },
+      "returning": {
+        "absolute_lift": 11.522052091554853,
+        "ci_high": 17.447000068930713,
+        "ci_low": 5.597104114178992,
+        "control_mean": 9.251428571428571,
+        "n_control": 175.0,
+        "n_treatment": 181.0,
+        "p_value": 0.00015479832307536756,
+        "relative_lift": 1.2454349079815314,
+        "std_error": 3.012652891201857,
+        "treatment_mean": 20.773480662983424
+      }
+    }
+  },
+  "model_path": "/Users/pavan/Projects/restaurant-recsys/models/ranker_v1.txt",
+  "n_experiment_requests": 2800,
+  "n_requests": 1400,
+  "n_restaurants": 90,
+  "n_test_requests": 210,
+  "n_test_rows": 13643,
+  "n_train_rows": 9620,
+  "n_users": 400,
+  "n_valid_rows": 2040,
+  "personalized": {
+    "coverage": 0.9777777777777777,
+    "diversity": 0.4655502392344499,
+    "hit_rate@10": 0.8181818181818182,
+    "mrr": 0.5798927845937341,
+    "n_requests": 209.0,
+    "ndcg@10": 0.3821550147168912,
+    "recall@10": 0.2947782479488693
+  },
+  "relative_ndcg_lift": 0.6751940085992416,
+  "relative_recall_lift": 0.8967857718223865
+}

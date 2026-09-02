@@ -26,12 +26,13 @@ node_modules/
 *.lgb
 models/*.txt
 !models/.gitkeep
+!models/ranker_v1.txt
 
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
-!data/processed/.gitkeep
+!data/processed/metrics.json
 
 secrets/
 data/private/

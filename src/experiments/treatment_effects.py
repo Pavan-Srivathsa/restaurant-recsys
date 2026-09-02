@@ -53,15 +53,21 @@ def interaction_ols(
         raise ValueError("arrays must be the same length")
     n = y_arr.size
     x = np.column_stack([np.ones(n), t, r, t * r])
-    beta, residuals, rank, _ = np.linalg.lstsq(x, y_arr, rcond=None)
-    fitted = x @ beta
+    # Ridge + pinv: treatment × returning is near-collinear when most users are returning.
+    xtx = x.T @ x
+    ridge = 1e-6 * np.eye(x.shape[1]) * max(float(np.trace(xtx) / x.shape[1]), 1.0)
+    with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+        xtx_inv = np.linalg.pinv(xtx + ridge)
+        beta = xtx_inv @ (x.T @ y_arr)
+        fitted = x @ beta
+    beta = np.asarray(beta, dtype=float)
+    fitted = np.asarray(fitted, dtype=float)
+    if not np.all(np.isfinite(beta)):
+        beta = np.linalg.lstsq(x, y_arr, rcond=1e-4)[0]
+        fitted = x @ beta
     resid = y_arr - fitted
     df = max(n - 4, 1)
-    sigma2 = float(np.sum(resid ** 2) / df)
-    try:
-        xtx_inv = np.linalg.inv(x.T @ x)
-    except np.linalg.LinAlgError:
-        xtx_inv = np.linalg.pinv(x.T @ x)
+    sigma2 = float(np.sum(np.square(np.nan_to_num(resid))) / df)
     se = np.sqrt(np.maximum(np.diag(xtx_inv) * sigma2, 0.0))
     names = ("intercept", "treatment", "returning_user", "treatment_x_returning")
     out: Dict[str, float] = {}

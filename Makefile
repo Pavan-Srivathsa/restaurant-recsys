@@ -1,4 +1,4 @@
-.PHONY: install test lint serve compose
+.PHONY: install test lint serve compose offline report
 
 install:
 	python3 -m pip install -e ".[dev]"
@@ -14,3 +14,9 @@ serve:
 
 compose:
 	docker compose up --build
+
+offline:
+	PYTHONPATH=src python3 -m ranking.run
+
+report:
+	PYTHONPATH=src python3 -m evaluation.report
